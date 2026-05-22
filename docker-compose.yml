@@ -1,0 +1,37 @@
+services:
+  rsshub:
+    # chromium-bundled 內含 headless chromium,給 IG/FB/Threads 用
+    # 純 YouTube 可改用 diygod/rsshub:latest (image 小很多)
+    image: diygod/rsshub:chromium-bundled
+    container_name: rsshub
+    restart: unless-stopped
+    ports:
+      # 綁 127.0.0.1,只允許本機存取,避免暴露到區網
+      - "127.0.0.1:1200:1200"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: redis
+      REDIS_URL: redis://redis:6379/
+      # 給 puppeteer (chromium) 用
+      PUPPETEER_WS_ENDPOINT:
+    depends_on:
+      - redis
+    networks:
+      - rsshub-net
+
+  redis:
+    image: redis:alpine
+    container_name: rsshub-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    networks:
+      - rsshub-net
+
+networks:
+  rsshub-net:
+
+volumes:
+  redis-data:
