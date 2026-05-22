@@ -1,0 +1,28 @@
+# Secrets
+.env
+*.cookie
+cookies/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Logs / runtime
+*.log
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# AI agent configs (個人工作流,不入庫)
+CLAUDE.md
+.cursorrules
+.aider*

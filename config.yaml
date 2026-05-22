@@ -1,0 +1,28 @@
+# 訂閱清單。每個項目會在 feeds/<name>.xml 產生一個 RSS。
+#
+# 兩種來源任選其一:
+#   url:   直接抓這個 URL
+#   route: 拼到 http://localhost:1200/<route> (走本機 RSSHub)
+#
+# YouTube 走 RSSHub 的 playlist 路由,訂閱「uploads playlist」(自動含所有上傳)
+# uploads playlist ID = 把 channel ID 開頭的 UC 改成 UU
+# (為什麼不用 YouTube 官方 RSS / RSSHub channel 路由,見 DECISIONS.md)
+
+feeds:
+  # --- YouTube ---
+  - name: youtube-taoofhumility
+    route: /youtube/playlist/UUiKGSJ5sxNwfwi0F53R2J8Q
+    # 對應頻道: https://www.youtube.com/@taoofhumility
+    # channel ID: UCiKGSJ5sxNwfwi0F53R2J8Q → uploads playlist: UUiKGSJ5sxNwfwi0F53R2J8Q
+
+  # --- Threads ---
+  # - name: threads-zuck
+  #   route: /threads/zuck
+
+  # --- Facebook Public Page ---
+  # - name: fb-meta
+  #   route: /facebook/page/Meta
+
+  # --- Instagram (需先在 .env 設好 IG 分身帳號) ---
+  # - name: ig-natgeo
+  #   route: /instagram/user/natgeo
