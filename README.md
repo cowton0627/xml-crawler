@@ -52,22 +52,35 @@ pip install -r requirements.txt
 
 ### 5. 設 cron
 
+`scripts/run.sh` 是 cron 入口,做了「確保容器活著 → 抓 feed → 若有變更 commit & push」三件事。
+
 ```bash
-crontab -e
-# 加一行 (每 30 分):
-# */30 * * * * cd /home/cowton/projects/xml-crawler && .venv/bin/python fetch_feeds.py >> fetch.log 2>&1
+sudo systemctl enable --now cron
+(crontab -l 2>/dev/null | grep -v xml-crawler; \
+ echo "*/30 * * * * /home/cowton/projects/xml-crawler/scripts/run.sh >> /home/cowton/projects/xml-crawler/run.log 2>&1") | crontab -
 ```
+
+驗證: `crontab -l` 應該看到那行。log 看 `tail -f run.log`。
 
 ---
 
 ## 加新訂閱
 
-1. 編輯 `config.yaml`,加一個 `feeds:` 項目
-2. `python fetch_feeds.py` 跑一次看是否產生對應 `feeds/<name>.xml`
-3. `git add feeds/ config.yaml && git commit && git push`
-4. 在 RSS reader 訂閱 `https://<你的帳號>.github.io/xml-crawler/feeds/<name>.xml`
+1. 編輯 `config.yaml`,加一個 `feeds:` 項目(`url:` 直連或 `route:` 走 RSSHub)
+2. 手動跑一次驗證: `./scripts/run.sh` (會抓 + commit + push)
+3. 在 RSS reader 訂閱 `https://<你的帳號>.github.io/xml-crawler/feeds/<name>.xml`
 
-如何找各平台的路由參數,見 [RSSHub Routes](https://docs.rsshub.app/routes/)。
+### 找 YouTube channel 的 uploads playlist ID
+
+```bash
+# 把 @handle 換成你要訂的頻道
+curl -sSL -A "Mozilla/5.0" "https://www.youtube.com/@<handle>" \
+  | grep -oE '"externalId":"UC[A-Za-z0-9_-]{22}"'
+```
+
+拿到 `UCxxxxx...`,把開頭 `UC` 改成 `UU`(就是該頻道的「上傳影片」播放清單 ID),路由用 `/youtube/playlist/UUxxxxx...`。
+
+其他平台路由參考 [RSSHub Routes](https://docs.rsshub.app/)。
 
 ---
 
