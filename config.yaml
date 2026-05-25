@@ -15,9 +15,15 @@ feeds:
     # 對應頻道: https://www.youtube.com/@taoofhumility
     # channel ID: UCiKGSJ5sxNwfwi0F53R2J8Q → uploads playlist: UUiKGSJ5sxNwfwi0F53R2J8Q
 
+  - name: youtube-cowton0517
+    route: /youtube/playlist/UUTWSgo6Lspo9baGEhWkxDrA
+    # 對應頻道: https://www.youtube.com/@cowton0517
+    # channel ID: UCTWSgo6Lspo9baGEhWkxDrA → uploads playlist: UUTWSgo6Lspo9baGEhWkxDrA
+
   # --- Threads ---
-  # - name: threads-zuck
-  #   route: /threads/zuck
+  - name: threads-ondo_23333
+    route: /threads/ondo_23333
+    # 對應: https://www.threads.com/@ondo_23333
 
   # --- Facebook Public Page ---
   # - name: fb-meta
