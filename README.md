@@ -57,10 +57,15 @@ pip install -r requirements.txt
 ```bash
 sudo systemctl enable --now cron
 (crontab -l 2>/dev/null | grep -v xml-crawler; \
- echo "*/30 * * * * /home/cowton/projects/xml-crawler/scripts/run.sh >> /home/cowton/projects/xml-crawler/run.log 2>&1") | crontab -
+ echo "0 */6 * * * /home/cowton/projects/xml-crawler/scripts/run.sh >> /home/cowton/projects/xml-crawler/run.log 2>&1") | crontab -
 ```
 
 驗證: `crontab -l` 應該看到那行。log 看 `tail -f run.log`。
+
+頻率為什麼是每 6 小時(不是 30 分):
+- `fetch_feeds.py` 會比對「item GUID 集合」,實質沒新內容就不覆寫 feeds/,git 也不會 push
+- YouTube/Threads 發文頻率本來就不會 30 分一篇,30 分抓只是浪費 RSSHub 與推送資源
+- 雲端 RSS reader 自己刷新間隔通常 30~120 分,我們抓得比它快沒意義
 
 ---
 
