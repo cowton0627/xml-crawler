@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import httpx
@@ -16,6 +17,7 @@ CONFIG_PATH = ROOT / "config.yaml"
 FEEDS_DIR = ROOT / "feeds"
 RSSHUB_BASE = "http://localhost:1200"
 TIMEOUT_SECONDS = 60
+ATOM_NS = "{http://www.w3.org/2005/Atom}"
 
 
 def load_config() -> list[dict]:
@@ -36,6 +38,28 @@ def resolve_url(entry: dict) -> str | None:
     return None
 
 
+def extract_item_ids(xml_text: str) -> set[str] | None:
+    """抓 RSS/Atom 的 item identifier 集合。Parse 失敗或抓不到任何 id 就回 None。
+
+    用 GUID 集合判斷實質變更,避免 <lastBuildDate> 或 CDN URL 浮動 token 造成假變更。
+    """
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return None
+
+    ids: set[str] = set()
+    for item in root.iter("item"):  # RSS 2.0
+        ident = (item.findtext("guid") or item.findtext("link") or "").strip()
+        if ident:
+            ids.add(ident)
+    for entry in root.iter(f"{ATOM_NS}entry"):  # Atom
+        ident = (entry.findtext(f"{ATOM_NS}id") or "").strip()
+        if ident:
+            ids.add(ident)
+    return ids or None
+
+
 def fetch_one(client: httpx.Client, name: str, url: str) -> tuple[bool, str]:
     try:
         resp = client.get(url, follow_redirects=True)
@@ -50,6 +74,12 @@ def fetch_one(client: httpx.Client, name: str, url: str) -> tuple[bool, str]:
         return False, f"回應不是 RSS/Atom (前 200 字: {body[:200]})"
 
     target = FEEDS_DIR / f"{name}.xml"
+    if target.exists():
+        new_ids = extract_item_ids(body)
+        old_ids = extract_item_ids(target.read_text(encoding="utf-8"))
+        if new_ids is not None and old_ids is not None and new_ids == old_ids:
+            return True, f"item 集合未變 ({len(new_ids)} 則),保留舊檔"
+
     target.write_text(body, encoding="utf-8")
     return True, f"{len(body)} bytes → {target.relative_to(ROOT)}"
 
