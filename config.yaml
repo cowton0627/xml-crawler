@@ -10,11 +10,6 @@
 
 feeds:
   # --- YouTube ---
-  - name: youtube-taoofhumility
-    route: /youtube/playlist/UUiKGSJ5sxNwfwi0F53R2J8Q
-    # 對應頻道: https://www.youtube.com/@taoofhumility
-    # channel ID: UCiKGSJ5sxNwfwi0F53R2J8Q → uploads playlist: UUiKGSJ5sxNwfwi0F53R2J8Q
-
   - name: youtube-cowton0517
     route: /youtube/playlist/UUTWSgo6Lspo9baGEhWkxDrA
     # 對應頻道: https://www.youtube.com/@cowton0517
