@@ -73,14 +73,26 @@ sudo systemctl enable --now cron
 
 ### A. Web UI(推薦)
 
-```bash
-./scripts/serve.sh
-# 瀏覽器打開 http://localhost:8000
-```
-
 選平台 + 輸入 `@handle`(或完整網址),按新增。後端會:解析 → 寫 config.yaml → 立刻抓一次 → git commit/push → 回傳 GitHub Pages URL 給你複製。
 
-UI 綁 `127.0.0.1`,只給本機用,沒有 auth(自用)。
+**永久跑(systemd service,WSL2 開機自動啟動)**:
+
+```bash
+sudo cp scripts/xml-crawler.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now xml-crawler
+sudo systemctl status xml-crawler
+```
+
+裝完之後瀏覽器打 `http://wsl-crawler:8000`(Tailscale Magic DNS)或 `http://<tailscale-ip>:8000`,從你 tailnet 內任何裝置都能用。
+
+**臨時跑(dev/debug)**:
+
+```bash
+./scripts/serve.sh
+```
+
+serve.sh 預設綁 `0.0.0.0`,Windows host / Tailscale / SSH tunnel 都看得到。要鎖死本機可用 `HOST=127.0.0.1 ./scripts/serve.sh`。
 
 ### B. 手動(備用)
 
