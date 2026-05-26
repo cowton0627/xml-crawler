@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from crawler import (
+    FEEDS_DIR,
     PLATFORMS,
     ROOT,
     RSSHUB_BASE,
@@ -21,6 +22,7 @@ from crawler import (
     git_push_changes,
     is_name_taken,
     load_feeds,
+    remove_feed_entry,
 )
 
 app = FastAPI(title="xml-crawler")
@@ -92,3 +94,22 @@ def add_subscription(req: AddRequest):
         raise HTTPException(500, f"git push 失敗: {e}")
 
     return {"name": name, "public_url": feed_public_url(name)}
+
+
+@app.delete("/api/feeds/{name}")
+def remove_subscription(name: str):
+    if not is_name_taken(name):
+        raise HTTPException(404, f"找不到訂閱: {name}")
+
+    remove_feed_entry(name)
+    (FEEDS_DIR / f"{name}.xml").unlink(missing_ok=True)
+
+    try:
+        git_push_changes(
+            f"feeds: remove {name}",
+            ["config.yaml", f"feeds/{name}.xml"],
+        )
+    except Exception as e:
+        raise HTTPException(500, f"git push 失敗: {e}")
+
+    return {"name": name, "removed": True}
