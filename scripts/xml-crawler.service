@@ -1,0 +1,18 @@
+[Unit]
+Description=xml-crawler Web UI (FastAPI + uvicorn)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cowton
+WorkingDirectory=/home/cowton/projects/xml-crawler
+# 確保 RSSHub container 起來(冪等);docker-compose.yml 的 restart: unless-stopped
+# 通常會自動處理,這條是雙保險。
+ExecStartPre=/usr/bin/docker compose up -d --quiet-pull
+ExecStart=/home/cowton/projects/xml-crawler/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
