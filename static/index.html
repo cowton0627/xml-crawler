@@ -82,7 +82,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .copy-btn {
+  .row-btn {
     border: 1px solid var(--border);
     border-radius: 6px;
     background: white;
@@ -90,8 +90,11 @@
     padding: 4px 10px;
     font-size: 0.85rem;
   }
-  .copy-btn:hover { background: var(--bg); }
-  .copy-btn.copied { background: var(--ok); color: white; border-color: var(--ok); }
+  .row-btn:hover { background: var(--bg); }
+  .row-btn.copied { background: var(--ok); color: white; border-color: var(--ok); }
+  .row-btn.del { color: var(--err); }
+  .row-btn.del:hover { background: var(--err); color: white; border-color: var(--err); }
+  .row-btn:disabled { opacity: 0.5; cursor: wait; }
 
   .empty { color: var(--muted); font-style: italic; padding: 8px 0; }
 </style>
@@ -149,12 +152,13 @@ async function loadFeeds() {
     <li>
       <span class="feed-name">${f.name}</span>
       <span class="feed-url" title="${f.public_url}">${f.public_url}</span>
-      <button class="copy-btn" data-url="${f.public_url}">複製</button>
+      <button class="row-btn copy" data-url="${f.public_url}">複製</button>
+      <button class="row-btn del" data-name="${f.name}">退訂</button>
     </li>`,
     )
     .join("");
 
-  ul.querySelectorAll(".copy-btn").forEach((btn) => {
+  ul.querySelectorAll(".row-btn.copy").forEach((btn) => {
     btn.addEventListener("click", async () => {
       await navigator.clipboard.writeText(btn.dataset.url);
       btn.textContent = "已複製";
@@ -165,6 +169,30 @@ async function loadFeeds() {
       }, 1500);
     });
   });
+
+  ul.querySelectorAll(".row-btn.del").forEach((btn) => {
+    btn.addEventListener("click", () => deleteFeed(btn.dataset.name, btn));
+  });
+}
+
+async function deleteFeed(name, btn) {
+  if (!confirm(`確定要退訂「${name}」?\n會刪 config.yaml entry + feeds/${name}.xml + git push`)) return;
+  btn.disabled = true;
+  setStatus(`刪除 ${name} 中...`);
+  try {
+    const r = await fetch(`/api/feeds/${encodeURIComponent(name)}`, { method: "DELETE" });
+    const data = await r.json();
+    if (!r.ok) {
+      setStatus(`錯誤: ${data.detail || r.statusText}`, "err");
+      btn.disabled = false;
+      return;
+    }
+    setStatus(`✓ 已退訂 ${name}`, "ok");
+    await loadFeeds();
+  } catch (e) {
+    setStatus(`網路錯誤: ${e.message}`, "err");
+    btn.disabled = false;
+  }
 }
 
 async function addFeed() {

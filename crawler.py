@@ -114,6 +114,33 @@ def add_feed_entry(
         f.write(block)
 
 
+def remove_feed_entry(name: str) -> None:
+    """從 config.yaml 移除指定 name 的 entry block。
+
+    line-based 操作:找到 `- name: <name>` 那行,刪到下一個 `- name:` 或 EOF。
+    這會吃掉 entry 內部的縮排註解 — 接受這個取捨,換取不引入 ruamel.yaml 依賴。
+    """
+    lines = CONFIG_PATH.read_text(encoding="utf-8").splitlines(keepends=True)
+    marker = f"- name: {name}"
+
+    start = None
+    for i, line in enumerate(lines):
+        if line.strip() == marker:
+            start = i
+            break
+    if start is None:
+        raise ValueError(f"找不到 entry: {name}")
+
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if lines[j].lstrip().startswith("- name:"):
+            end = j
+            break
+
+    del lines[start:end]
+    CONFIG_PATH.write_text("".join(lines), encoding="utf-8")
+
+
 # ─── 平台解析 ────────────────────────────────────────────────────────────────
 
 PLATFORMS = ("youtube", "threads", "instagram")
