@@ -71,21 +71,31 @@ sudo systemctl enable --now cron
 
 ## 加新訂閱
 
+### A. Web UI(推薦)
+
+```bash
+./scripts/serve.sh
+# 瀏覽器打開 http://localhost:8000
+```
+
+選平台 + 輸入 `@handle`(或完整網址),按新增。後端會:解析 → 寫 config.yaml → 立刻抓一次 → git commit/push → 回傳 GitHub Pages URL 給你複製。
+
+UI 綁 `127.0.0.1`,只給本機用,沒有 auth(自用)。
+
+### B. 手動(備用)
+
 1. 編輯 `config.yaml`,加一個 `feeds:` 項目(`url:` 直連或 `route:` 走 RSSHub)
 2. 手動跑一次驗證: `./scripts/run.sh` (會抓 + commit + push)
 3. 在 RSS reader 訂閱 `https://<你的帳號>.github.io/xml-crawler/feeds/<name>.xml`
 
-### 找 YouTube channel 的 uploads playlist ID
+找 YouTube channel 的 uploads playlist ID(B 路線會用到,A 自動處理):
 
 ```bash
-# 把 @handle 換成你要訂的頻道
 curl -sSL -A "Mozilla/5.0" "https://www.youtube.com/@<handle>" \
   | grep -oE '"externalId":"UC[A-Za-z0-9_-]{22}"'
 ```
 
-拿到 `UCxxxxx...`,把開頭 `UC` 改成 `UU`(就是該頻道的「上傳影片」播放清單 ID),路由用 `/youtube/playlist/UUxxxxx...`。
-
-其他平台路由參考 [RSSHub Routes](https://docs.rsshub.app/)。
+拿到 `UCxxxxx...`,把開頭 `UC` 改成 `UU`(該頻道的「上傳影片」播放清單 ID),路由用 `/youtube/playlist/UUxxxxx...`。其他平台路由參考 [RSSHub Routes](https://docs.rsshub.app/)。
 
 ---
 
