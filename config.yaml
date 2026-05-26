@@ -27,3 +27,6 @@ feeds:
   # --- Instagram (需先在 .env 設好 IG 分身帳號) ---
   # - name: ig-natgeo
   #   route: /instagram/user/natgeo
+
+  - name: youtube-taoofhumility
+    route: /youtube/playlist/UUiKGSJ5sxNwfwi0F53R2J8Q
