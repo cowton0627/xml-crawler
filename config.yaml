@@ -24,9 +24,12 @@ feeds:
   # - name: fb-meta
   #   route: /facebook/page/Meta
 
-  # --- Instagram (需先在 .env 設好 IG 分身帳號) ---
+  # --- Instagram (需先在 .env 設好 IG_COOKIE,見 .env.example) ---
+  # 用 web-api 路由 /instagram/2/user/<帳號>,不是 /instagram/user/<帳號>。
+  # 後者是 private-api,沒設 IG_USERNAME/IG_PASSWORD 會回 ConfigNotFoundError;
+  # 前者吃 IG_COOKIE。連公開帳號都要 cookie,匿名請求會被 IG 回 429。
   # - name: ig-natgeo
-  #   route: /instagram/user/natgeo
+  #   route: /instagram/2/user/natgeo
 
   - name: youtube-taoofhumility
     route: /youtube/playlist/UUiKGSJ5sxNwfwi0F53R2J8Q
