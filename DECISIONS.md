@@ -7,7 +7,8 @@
 1. **YouTube 官方 `/feeds/videos.xml?channel_id=<id>`** — 2026-05 實測對所有頻道(含 MKBHD 等大頻道)一律 404。Google 這幾年陸續砍/限縮此 endpoint,不能再用
 2. **RSSHub `/youtube/channel/<id>`** — 用 `youtubejs` 抓 YT 內部 API,被 YT 結構改版打壞,503 "this route is empty"
 3. **RSSHub `/youtube/playlist/<playlist_id>`** — 改抓「uploads playlist」(每個頻道自動有一個包含所有上傳的播放清單,ID 就是把 channel ID 的 `UC` 改成 `UU`),這條路徑走的是 playlist API 不是 channel API。**2026-06 已失效**:跟 channel 路由一樣回 503 "this route is empty"(無 API key 的抓取被 YT 打壞)。實測 5/25–5/26 後 feed 就沒再更新,cron 一直 `exit 1`,期間 auto-update 全是 Threads 在動。升級 RSSHub image 到 2026-06-16 build 也沒修好,確認是 YT 端問題不是 image。
-4. **備案(尚未啟用):YouTube Data API v3 + key** — 免費 quota 10000/day 夠用,RSSHub playlist 路由設了 `YOUTUBE_KEY` 就改走官方 API,穩定度高。要去 Google Cloud Console 申請 key。**YouTube 要恢復多半得走這條。**
+4. **YouTube Data API v3 + key** ✅(2026-06-17 啟用)— 無 key 的抓取被 YT 打壞後,改走這條。在 Google Cloud Console(用**個人 gmail**,避開公司 Workspace 的組織政策限制)建專案 → 啟用 YouTube Data API v3 → 建「公開資料」API 金鑰 → API 限制只勾 YouTube Data API v3 → 填進 `.env` 的 `YOUTUBE_KEY`。RSSHub playlist 路由偵測到 key 就改走官方 API,穩定。免費 quota 10000/day 夠用。實測 cowton0517 21 則、taoofhumility 50 則(API 單頁上限)恢復正常。
+   - 注意:RSSHub 輸出單行壓縮 XML,驗證 item 數要用 `grep -o '<item>' | wc -l`,別用 `grep -c`(數行數會誤回 1)。
 
 `fetch_feeds.py` 仍支援 `url:` 直連寫法,留給未來有官方 feed 的來源用。
 
