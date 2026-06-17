@@ -24,12 +24,15 @@ feeds:
   # - name: fb-meta
   #   route: /facebook/page/Meta
 
-  # --- Instagram (需先在 .env 設好 IG_COOKIE,見 .env.example) ---
-  # 用 web-api 路由 /instagram/2/user/<帳號>,不是 /instagram/user/<帳號>。
-  # 後者是 private-api,沒設 IG_USERNAME/IG_PASSWORD 會回 ConfigNotFoundError;
-  # 前者吃 IG_COOKIE。連公開帳號都要 cookie,匿名請求會被 IG 回 429。
-  # - name: ig-natgeo
-  #   route: /instagram/2/user/natgeo
+  # --- Instagram ---
+  # 2026-06 實測:官方 IG 路由全不通(見 DECISIONS.md)。
+  #   /instagram/2/user/<X>  (web-api, cookie) → 被 IG TLS/JA3 指紋擋
+  #   /instagram/user/<X>    (private-api, 帳密) → 自動化登入被 IG 軟封鎖
+  # 改走鏡像站路由 /picnob/user/<X>:不需登入、只能抓「公開帳號」、靠第三方
+  # 鏡像站 picnob.com,會浮動/偶爾壞(item 數時多時少),但目前唯一能用的路。
+  - name: ig-natgeo
+    route: /picnob/user/natgeo
+    # 對應: https://www.instagram.com/natgeo
 
   - name: youtube-taoofhumility
     route: /youtube/playlist/UUiKGSJ5sxNwfwi0F53R2J8Q
