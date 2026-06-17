@@ -6,8 +6,8 @@
 
 1. **YouTube 官方 `/feeds/videos.xml?channel_id=<id>`** — 2026-05 實測對所有頻道(含 MKBHD 等大頻道)一律 404。Google 這幾年陸續砍/限縮此 endpoint,不能再用
 2. **RSSHub `/youtube/channel/<id>`** — 用 `youtubejs` 抓 YT 內部 API,被 YT 結構改版打壞,503 "this route is empty"
-3. **RSSHub `/youtube/playlist/<playlist_id>`** ✅ — 改抓「uploads playlist」(每個頻道自動有一個包含所有上傳的播放清單,ID 就是把 channel ID 的 `UC` 改成 `UU`),這條路徑走的是 playlist API 不是 channel API,目前 work
-4. 備案:YouTube Data API v3 + 自己生 RSS。免費 quota 10000/day 夠用,但要去 Google Cloud Console 申請 key,複雜度較高,目前不選
+3. **RSSHub `/youtube/playlist/<playlist_id>`** — 改抓「uploads playlist」(每個頻道自動有一個包含所有上傳的播放清單,ID 就是把 channel ID 的 `UC` 改成 `UU`),這條路徑走的是 playlist API 不是 channel API。**2026-06 已失效**:跟 channel 路由一樣回 503 "this route is empty"(無 API key 的抓取被 YT 打壞)。實測 5/25–5/26 後 feed 就沒再更新,cron 一直 `exit 1`,期間 auto-update 全是 Threads 在動。升級 RSSHub image 到 2026-06-16 build 也沒修好,確認是 YT 端問題不是 image。
+4. **備案(尚未啟用):YouTube Data API v3 + key** — 免費 quota 10000/day 夠用,RSSHub playlist 路由設了 `YOUTUBE_KEY` 就改走官方 API,穩定度高。要去 Google Cloud Console 申請 key。**YouTube 要恢復多半得走這條。**
 
 `fetch_feeds.py` 仍支援 `url:` 直連寫法,留給未來有官方 feed 的來源用。
 
@@ -27,6 +27,16 @@
 | VPS | 否 (VPS 常開) | 即時 | 中 | 不想付月費,拒絕 |
 
 代價:訂閱清單 (config.yaml + feeds/) 是公開的。但訂的內容本來就是公開帳號,可接受。
+
+## IG 經歷三條死路,最後走鏡像站 picnob
+
+2026-05～06 為了訂 IG 公開帳號,依序撞牆:
+
+1. **`/instagram/2/user/<X>`(web-api,吃 `IG_COOKIE`)** — cookie 本身有效(容器內 `curl` 同 cookie + header 可拿 HTTP 200),但 RSSHub 用的 Node `ofetch`(undici)被 IG 的 TLS/JA3 指紋擋,一律 429。Node 無公開 API 改 TLS 指紋,RSSHub 不會為單一路由引 `curl-impersonate`。**設定問題排除,是架構限制。**
+2. **`/instagram/user/<X>`(private-api,吃 `IG_USERNAME`/`IG_PASSWORD`)** — `instagram-private-api` 模擬 App 登入,TLS 指紋不同可繞過第 1 點。但實測即使帳密完全正確(同帳密無痕瀏覽器登入成功、handle 正確、2FA 關閉、住宅 IP 非機房),`/api/v1/accounts/login/` 仍回 `IgLoginBadPasswordError 400 ... we can send you an email`。IG 對「模擬 App API 的自動化登入」偵測精準,軟封鎖。
+3. **`/picnob/user/<X>`(第三方鏡像站 picnob.com)** ✅ — 不需登入、只能抓**公開帳號**。升級 RSSHub image 到 2026-06-16 build 後此路由可用(舊 build 的 picnob 站 API 回 401)。**目前唯一能用的 IG 路。**
+
+代價/風險:靠第三方鏡像站,會浮動(item 數時多時少)、隨時可能壞;貼文連結指向 picnob.com 而非 instagram.com。屬「能用就用,壞了再說」。需登入的官方路線在免費自架前提下實質已死。
 
 ## 為什麼 IG 用分身帳,不用本帳
 
