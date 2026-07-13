@@ -35,9 +35,10 @@
 
 1. **`/instagram/2/user/<X>`(web-api,吃 `IG_COOKIE`)** — cookie 本身有效(容器內 `curl` 同 cookie + header 可拿 HTTP 200),但 RSSHub 用的 Node `ofetch`(undici)被 IG 的 TLS/JA3 指紋擋,一律 429。Node 無公開 API 改 TLS 指紋,RSSHub 不會為單一路由引 `curl-impersonate`。**設定問題排除,是架構限制。**
 2. **`/instagram/user/<X>`(private-api,吃 `IG_USERNAME`/`IG_PASSWORD`)** — `instagram-private-api` 模擬 App 登入,TLS 指紋不同可繞過第 1 點。但實測即使帳密完全正確(同帳密無痕瀏覽器登入成功、handle 正確、2FA 關閉、住宅 IP 非機房),`/api/v1/accounts/login/` 仍回 `IgLoginBadPasswordError 400 ... we can send you an email`。IG 對「模擬 App API 的自動化登入」偵測精準,軟封鎖。
-3. **`/picnob/user/<X>`(第三方鏡像站 picnob.com)** ✅ — 不需登入、只能抓**公開帳號**。升級 RSSHub image 到 2026-06-16 build 後此路由可用(舊 build 的 picnob 站 API 回 401)。**目前唯一能用的 IG 路。**
+3. **`/picnob/user/<X>`(第三方鏡像站 picnob.com)** — 2026-06-16 build 起可用,**2026-06-17 起死亡**:picnob.com 升級防護,對非瀏覽器流量一律 403,RSSHub 抓到空頁回「this route is empty」。2026-07-13 升級 RSSHub image 至最新 build 亦無效(是鏡像站端在擋,上游修不了)。
+4. **`/picuki/profile/<X>`(鏡像站 picuki.com)** ✅(2026-07-13 起)— 同 build 內的替代鏡像路由,實測 natgeo 35 則、內文正確。已知折衷:**item 無 pubDate**(RSS reader 以首次看到時間排序)、連結指向 picuki.com。
 
-代價/風險:靠第三方鏡像站,會浮動(item 數時多時少)、隨時可能壞;貼文連結指向 picnob.com 而非 instagram.com。屬「能用就用,壞了再說」。需登入的官方路線在免費自架前提下實質已死。
+代價/風險:靠第三方鏡像站,會浮動(item 數時多時少)、隨時可能壞;貼文連結指向鏡像站而非 instagram.com。屬「能用就用,壞了再說」——鏡像站是打地鼠,壞了就在 RSSHub 的 `/api/namespace` 清單裡找下一家(picnob → picuki 就是這樣換的)。需登入的官方路線在免費自架前提下實質已死。
 
 ## 為什麼 IG 用分身帳,不用本帳
 

@@ -28,10 +28,11 @@ feeds:
   # 2026-06 實測:官方 IG 路由全不通(見 DECISIONS.md)。
   #   /instagram/2/user/<X>  (web-api, cookie) → 被 IG TLS/JA3 指紋擋
   #   /instagram/user/<X>    (private-api, 帳密) → 自動化登入被 IG 軟封鎖
-  # 改走鏡像站路由 /picnob/user/<X>:不需登入、只能抓「公開帳號」、靠第三方
-  # 鏡像站 picnob.com,會浮動/偶爾壞(item 數時多時少),但目前唯一能用的路。
+  # 只能走第三方鏡像站路由:不需登入、只能抓「公開帳號」、會浮動/隨時可能壞。
+  # 2026-06-17 起 picnob 死亡(picnob.com 對非瀏覽器流量回 403),2026-07-13 改走
+  # picuki。picuki 的已知折衷:item 無 pubDate(reader 以首次看到排序)。
   - name: ig-natgeo
-    route: /picnob/user/natgeo
+    route: /picuki/profile/natgeo
     # 對應: https://www.instagram.com/natgeo
 
   - name: youtube-taoofhumility
