@@ -40,3 +40,6 @@ feeds:
 
   - name: youtube-dances35
     route: /youtube/playlist/UUKgn0vmsj8IXV_F74wU92Zw
+
+  - name: threads-coffeewwww
+    route: /threads/coffeewwww
