@@ -16,21 +16,6 @@ feeds:
     # channel ID: UCTWSgo6Lspo9baGEhWkxDrA → uploads playlist: UUTWSgo6Lspo9baGEhWkxDrA
 
   # --- Threads ---
-  - name: threads-ondo_23333
-    route: /threads/ondo_23333
-    # 對應: https://www.threads.com/@ondo_23333
-
-  # --- Facebook Public Page ---
-  # - name: fb-meta
-  #   route: /facebook/page/Meta
-
-  # --- Instagram ---
-  # 2026-06 實測:官方 IG 路由全不通(見 DECISIONS.md)。
-  #   /instagram/2/user/<X>  (web-api, cookie) → 被 IG TLS/JA3 指紋擋
-  #   /instagram/user/<X>    (private-api, 帳密) → 自動化登入被 IG 軟封鎖
-  # 只能走第三方鏡像站路由:不需登入、只能抓「公開帳號」、會浮動/隨時可能壞。
-  # 2026-06-17 起 picnob 死亡(picnob.com 對非瀏覽器流量回 403),2026-07-13 改走
-  # picuki。picuki 的已知折衷:item 無 pubDate(reader 以首次看到排序)。
   - name: ig-natgeo
     route: /picuki/profile/natgeo
     # 對應: https://www.instagram.com/natgeo
