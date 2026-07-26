@@ -220,11 +220,20 @@ def feed_public_url(name: str) -> str:
 
 
 def git_push_changes(message: str, paths: list[str]) -> None:
-    """加指定路徑、commit、push 當前 branch。沒變更則 skip。"""
+    """加指定路徑、commit、push 當前 branch。沒變更則 skip。
+
+    push 被拒(通常是另一台在自動更新 feeds,origin 領先造成 non-fast-forward)時,
+    自動 `pull --rebase` 一次再重試 push,避免整個訂閱操作失敗。
+    """
     _git("add", *paths)
     status = _git("status", "--porcelain", *paths)
     if not status:
         return
     _git("commit", "-m", message)
     branch = _git("rev-parse", "--abbrev-ref", "HEAD")
-    _git("push", "origin", branch)
+    try:
+        _git("push", "origin", branch)
+    except subprocess.CalledProcessError:
+        # origin 領先 → 先把遠端變更 rebase 進來(本次 commit 疊到最上),再 push 一次。
+        _git("pull", "--rebase", "origin", branch)
+        _git("push", "origin", branch)
