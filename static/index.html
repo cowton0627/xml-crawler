@@ -130,6 +130,42 @@ function setStatus(msg, cls = "") {
   statusEl.className = "status " + cls;
 }
 
+// navigator.clipboard 只在安全情境(HTTPS / localhost)存在;
+// 純 HTTP 主機名(http://xml-crawler:8000)下要 fallback。
+async function copyText(text) {
+  // 1. 標準 API(HTTPS / localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      /* 落到下方 fallback */
+    }
+  }
+  // 2. 舊 execCommand(部分瀏覽器純 HTTP 下仍可)
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.left = "0";
+    ta.style.top = "0";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    if (ok) return true;
+  } catch (e) {
+    /* 落到下方 prompt 保底 */
+  }
+  // 3. 保底:跳可 Ctrl+C 的視窗,一定拿得到
+  window.prompt("自動複製被瀏覽器擋下,請手動複製(Ctrl+C / Cmd+C):", text);
+  return true;
+}
+
 async function loadPlatforms() {
   const r = await fetch("/api/platforms");
   const { platforms } = await r.json();
@@ -160,7 +196,11 @@ async function loadFeeds() {
 
   ul.querySelectorAll(".row-btn.copy").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      await navigator.clipboard.writeText(btn.dataset.url);
+      const ok = await copyText(btn.dataset.url);
+      if (!ok) {
+        setStatus("複製失敗,請手動選取網址複製", "err");
+        return;
+      }
       btn.textContent = "已複製";
       btn.classList.add("copied");
       setTimeout(() => {
