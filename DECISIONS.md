@@ -58,6 +58,36 @@
 * RSS reader (Feedly 等) 本身刷新間隔通常也是 30~60 分,更密也沒意義
 * git push 太頻繁會讓 repo 歷史膨脹
 
+## 線上服務跑在 PVE 容器,開發機只是另一份 clone
+
+`http://xml-crawler:8000/` 的 Web UI 服務跑在 **Proxmox 主機 `pve` 上的 LXC 容器(VMID 200,hostname `xml-crawler`,Tailscale)**,不是開發用的工作站。兩邊都是同一個 repo 的 clone,都 push 回同一個 GitHub origin。
+
+* 部署 = 開發機 `git push` → 容器 `git pull --rebase` →(只在改 Python 時)重啟服務;改 `static/` 因 `app.py` 用 `FileResponse` 即時讀檔,pull 完就生效、免重啟。
+* 容器內服務是系統級 systemd unit(`xml-crawler.service`,`User=cowton`、`Restart=on-failure`)。
+* 踩過的雷:曾誤把改動只 commit 到開發機那份 clone,線上完全沒吃到——**改線上行為一定要確認自己在對的機器上**。
+
+## 複製按鈕用 execCommand/prompt fallback,不為它上 HTTPS
+
+Web UI 的「複製 feed URL」原本只用 `navigator.clipboard.writeText`,但該 API **只在 secure context(HTTPS 或 localhost)存在**。使用者是用 `http://xml-crawler:8000`(純 HTTP + 非 localhost 主機名)開,`navigator.clipboard` 是 `undefined`,一按就丟錯、什麼都沒複製到。
+
+選擇三層 fallback(secure context 用標準 API → 否則 `document.execCommand('copy')` → 再不行跳 `prompt()` 讓使用者手動 Ctrl+C),而不是為這台內網自用工具去架 HTTPS(反代 + 憑證)。純內網、自用、低頻操作,fallback 的成本/效益遠優於維護 TLS。
+
+## `git_push_changes` push 失敗自動 `pull --rebase` 重試
+
+`/api/add`、`/api/feeds` 退訂、以及 cron 自動更新 feeds 都會 `git push`,而**開發機與 PVE 容器兩份 clone 會各自 push 回同一 origin**,cron 又頻繁自動 push feeds,origin 很容易在某一方 commit 後、push 前就領先 → non-fast-forward 被拒 → 訂閱操作整個失敗報「git push 失敗」。
+
+作法:`git_push_changes` 在 push 被拒時自動 `pull --rebase origin <branch>` 一次再重試。因 feeds/config 各筆改的檔案不重疊,rebase 幾乎不會衝突。已實測驗證:手動製造 origin 領先 1 格後訂閱,reflog 顯示確實走 rebase 把遠端 commit 補回、重放本次 commit 後 push 成功(舊版會回 500)。
+
+## 免密碼重啟:NOPASSWD sudoers 只放行單一指令
+
+容器內服務是系統級 systemd,重啟要 root;但遠端操作(Claude 用 `cowton` ssh 進去)沒有 root 密碼。與其開放整台 sudo,選擇在 `/etc/sudoers.d/xml-crawler` 只放行一條:
+
+```
+cowton ALL=(root) NOPASSWD: /usr/bin/systemctl restart xml-crawler
+```
+
+權限縮到最小(只能重啟這一個服務),`ssh xml-crawler 'sudo -n systemctl restart xml-crawler'` 即可乾淨重啟。備援:若 sudoers 遺失,可 `kill -9` uvicorn process 靠 `Restart=on-failure` 觸發重生(`kill -9` 屬非乾淨結束才會觸發;SIGTERM 反而被當乾淨、不重啟)。
+
 ## 為什麼不直接讓 RSS reader 連 RSSHub
 
 * 雲端 reader 需要公開 URL,等於要把本機 RSSHub 暴露到公網
