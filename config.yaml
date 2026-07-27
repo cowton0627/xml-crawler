@@ -29,5 +29,3 @@ feeds:
   - name: threads-coffeewwww
     route: /threads/coffeewwww
 
-  - name: threads-zuck
-    route: /threads/zuck
