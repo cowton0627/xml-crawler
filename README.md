@@ -4,6 +4,8 @@
 
 底層用 [RSSHub](https://github.com/DIYgod/RSSHub) (Docker) 跑路由,Python 腳本定時拉 XML、寫進 `feeds/`、git push。
 
+![xml-crawler 架構流程](./docs/architecture.svg)
+
 ---
 
 ## 架構
