@@ -112,6 +112,17 @@ cowton ALL=(root) NOPASSWD: /usr/bin/systemctl restart xml-crawler
 * **fail-open**:parse 失敗就原樣寫回,不因過濾把整個 feed 弄壞。
 * **範圍**:目前只吃 `config.yaml` 手動設定,Web UI 尚未提供過濾欄位(`add_feed_entry` 不寫 filter)。要 Web 化再說。
 
+## 關鍵字過濾暫不進 Web UI,未來要做先做「預覽」而非輸入表單
+
+2026-08-06 評估把 filter 拉進 Web UI,結論**暫不做**,維持 config.yaml 手動設定:
+
+1. **規則還沒定型**:同日實測 cowton0517 `include:[功能展示]` 才發現「標題+內文」比對會多命中 2 則標題無關鍵字、但內文寫了「功能展示」的影片(見上方「關鍵字過濾放在寫檔前那一層」)。語意仍在摸,這時上 UI 等於在會變的地基上蓋房子。
+2. **低頻操作**:filter 是「每個訂閱設一次、幾乎不再動」,Web UI 的價值在高頻的新增/退訂,不在這裡。
+3. **改 config 成本低**:單一技術使用者、已在「改→push→容器 pull」流程內;相比之下 UI 要處理 include/exclude 兩清單輸入+驗證+跳脫,還得支援「編輯既有訂閱的 filter」(現行 UI 無此模式),半套只在新增時能設反而更難用。
+4. 符合「基本功能即可」的定位。
+
+**未來若要做,優先做「預覽過濾結果」而非輸入表單**:filter 的真痛點是「不知道這條規則會篩掉什麼」,不是「難輸入」。給個 dry-run(輸入關鍵字 → 回會留幾則/濾掉哪些標題)比表單有用得多。觸發時機:在 3~4 個訂閱實際用過、規則手感穩了,且真的覺得改 config 很煩,再回來做。
+
 ## 評估過 crawl4ai,不採用
 
 2026-08-06 評估 [crawl4ai](https://github.com/unclecode/crawl4ai)(開源 LLM-friendly 爬蟲,Playwright + FastAPI,把任意網頁轉 Markdown/JSON 餵 LLM)。**不引入**:
