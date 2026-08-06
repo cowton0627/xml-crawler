@@ -7,6 +7,11 @@
 # YouTube 走 RSSHub 的 playlist 路由,訂閱「uploads playlist」(自動含所有上傳)
 # uploads playlist ID = 把 channel ID 開頭的 UC 改成 UU
 # (為什麼不用 YouTube 官方 RSS / RSSHub channel 路由,見 DECISIONS.md)
+#
+# 選用: filter 關鍵字過濾 (比對標題+內文,大小寫不敏感,中文可用):
+#   filter:
+#     include: [開箱, 教學]   # 非空時「只留」含任一關鍵字的貼文
+#     exclude: [直播回放, 業配]  # 含任一關鍵字的貼文一律丟 (優先於 include)
 
 feeds:
   # --- YouTube ---

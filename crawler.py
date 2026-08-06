@@ -18,6 +18,7 @@ FEEDS_DIR = ROOT / "feeds"
 RSSHUB_BASE = "http://localhost:1200"
 TIMEOUT_SECONDS = 60
 ATOM_NS = "{http://www.w3.org/2005/Atom}"
+CONTENT_NS = "{http://purl.org/rss/1.0/modules/content/}"
 
 
 def load_feeds() -> list[dict]:
@@ -60,8 +61,91 @@ def extract_item_ids(xml_text: str) -> set[str] | None:
     return ids or None
 
 
-def fetch_one(client: httpx.Client, name: str, url: str) -> tuple[bool, str]:
-    """抓單一 feed 寫進 feeds/<name>.xml。item 集合未變則保留舊檔。"""
+# ─── 關鍵字過濾 ──────────────────────────────────────────────────────────────
+
+_XMLNS_RE = re.compile(r'xmlns(?::([A-Za-z0-9_-]+))?="([^"]+)"')
+
+
+def _register_namespaces(xml_text: str) -> None:
+    """把文件內宣告的 namespace 註冊回 ET,序列化時才能保留原本的 prefix
+    (否則 content:encoded 會被輸出成 ns0:encoded)。ET 全域狀態,重複註冊無害。"""
+    for prefix, uri in _XMLNS_RE.findall(xml_text):
+        try:
+            ET.register_namespace(prefix or "", uri)
+        except ValueError:
+            pass
+
+
+def _item_match_text(item: ET.Element) -> str:
+    """一則 item/entry 用來比對關鍵字的文字:標題 + 內文(不含 link/guid,
+    避免像 'ad' 這種短字誤中網址)。"""
+    parts: list[str] = []
+    if item.tag == f"{ATOM_NS}entry":
+        for tag in ("title", "summary", "content"):
+            t = item.findtext(f"{ATOM_NS}{tag}")
+            if t:
+                parts.append(t)
+    else:  # RSS 2.0 item
+        for tag in ("title", "description"):
+            t = item.findtext(tag)
+            if t:
+                parts.append(t)
+        enc = item.find(f"{CONTENT_NS}encoded")
+        if enc is not None and enc.text:
+            parts.append(enc.text)
+    return " ".join(parts).lower()
+
+
+def apply_filter(xml_text: str, filt: dict | None) -> tuple[str, int]:
+    """依 filter 設定移除不要的 item,回 (過濾後 XML, 移除則數)。
+
+    filt 形如 {include: [...], exclude: [...]}:
+      * include 非空 → 只留「標題/內文含任一關鍵字」的 item
+      * exclude → 「含任一關鍵字」的 item 一律丟(優先於 include)
+    大小寫不敏感、子字串比對(中文可用)。無 filter 或 parse 失敗都原樣回傳
+    (fail-open,不因過濾把整個 feed 弄壞)。
+    """
+    if not filt:
+        return xml_text, 0
+    include = [k.lower() for k in (filt.get("include") or []) if str(k).strip()]
+    exclude = [k.lower() for k in (filt.get("exclude") or []) if str(k).strip()]
+    if not include and not exclude:
+        return xml_text, 0
+
+    _register_namespaces(xml_text)
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return xml_text, 0
+
+    removed = 0
+    for parent in root.iter():
+        for item in list(parent):
+            if item.tag != "item" and item.tag != f"{ATOM_NS}entry":
+                continue
+            text = _item_match_text(item)
+            keep = True
+            if include and not any(k in text for k in include):
+                keep = False
+            if exclude and any(k in text for k in exclude):
+                keep = False
+            if not keep:
+                parent.remove(item)
+                removed += 1
+
+    if removed == 0:
+        return xml_text, 0  # 沒動任何東西就回原文,避免無謂的重新序列化
+    out = ET.tostring(root, encoding="utf-8", xml_declaration=True).decode("utf-8")
+    return out, removed
+
+
+def fetch_one(
+    client: httpx.Client, name: str, url: str, filt: dict | None = None
+) -> tuple[bool, str]:
+    """抓單一 feed 寫進 feeds/<name>.xml。item 集合未變則保留舊檔。
+
+    filt 有值時,寫檔前先套關鍵字過濾(見 apply_filter),過濾後才做 dedup 比對。
+    """
     try:
         resp = client.get(url, follow_redirects=True)
     except httpx.HTTPError as e:
@@ -74,16 +158,22 @@ def fetch_one(client: httpx.Client, name: str, url: str) -> tuple[bool, str]:
     if "<rss" not in body and "<feed" not in body:
         return False, f"回應不是 RSS/Atom (前 200 字: {body[:200]})"
 
+    filter_note = ""
+    if filt:
+        body, removed = apply_filter(body, filt)
+        if removed:
+            filter_note = f" (過濾掉 {removed} 則)"
+
     FEEDS_DIR.mkdir(exist_ok=True)
     target = FEEDS_DIR / f"{name}.xml"
     if target.exists():
         new_ids = extract_item_ids(body)
         old_ids = extract_item_ids(target.read_text(encoding="utf-8"))
         if new_ids is not None and old_ids is not None and new_ids == old_ids:
-            return True, f"item 集合未變 ({len(new_ids)} 則),保留舊檔"
+            return True, f"item 集合未變 ({len(new_ids)} 則),保留舊檔{filter_note}"
 
     target.write_text(body, encoding="utf-8")
-    return True, f"{len(body)} bytes → {target.relative_to(ROOT)}"
+    return True, f"{len(body)} bytes → {target.relative_to(ROOT)}{filter_note}"
 
 
 def is_name_taken(name: str) -> bool:

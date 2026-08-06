@@ -35,7 +35,7 @@ def main() -> int:
                 continue
 
             print(f"[FETCH] {name}  ←  {url}")
-            success, msg = fetch_one(client, name, url)
+            success, msg = fetch_one(client, name, url, entry.get("filter"))
             print(f"  {'OK' if success else 'FAIL'}: {msg}")
             if success:
                 ok_count += 1

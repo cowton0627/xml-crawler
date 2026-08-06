@@ -88,6 +88,25 @@ cowton ALL=(root) NOPASSWD: /usr/bin/systemctl restart xml-crawler
 
 權限縮到最小(只能重啟這一個服務),`ssh xml-crawler 'sudo -n systemctl restart xml-crawler'` 即可乾淨重啟。備援:若 sudoers 遺失,可 `kill -9` uvicorn process 靠 `Restart=on-failure` 觸發重生(`kill -9` 屬非乾淨結束才會觸發;SIGTERM 反而被當乾淨、不重啟)。
 
+## 關鍵字過濾放在寫檔前那一層,用 ElementTree 重寫 XML
+
+2026-08-06 加入 `config.yaml` 每個來源可選的 `filter: {include, exclude}`(參考 rss.app 的社群 feed 過濾功能)。實作選擇:
+
+* **位置**:抓回 RSSHub 的 XML 後、寫進 `feeds/` 前套用(`crawler.apply_filter`),過濾後才做 GUID dedup 比對——符合「中間多一層 fetch 可以過濾」(見本檔最末節)。無 `filter` 的來源走原路徑,行為完全不變,零風險。
+* **比對範圍只取標題 + 內文**(RSS 的 `title`/`description`/`content:encoded`,Atom 的 `title`/`summary`/`content`),**不碰 `link`/`guid`**——否則像 `ad`、`http` 這種短關鍵字會誤中網址。已寫測試驗證 `exclude:[http]` 不會因 link 含 http 就砍光。
+* **語意**:`include` 非空時「只留含任一關鍵字」,`exclude` 命中一律丟(優先於 include),大小寫不敏感、子字串比對(中文可用)。
+* **取捨:用 `xml.etree.ElementTree` parse→移除 item→重新序列化**,會把原本 CDATA 包的 `description` 轉成 entity 轉義(`&lt;`),bytes 跟 RSSHub 原輸出不同。語意等價(reader 解 entity 與 CDATA 結果相同),接受此取捨換取不引第三方 XML 套件。為降低影響:**沒有任何 item 被移除時直接回原文、不重新序列化**(大多數抓取不會命中過濾)。用 regex 掃 `xmlns` 宣告 `ET.register_namespace` 回去,保留 `content:`/`atom:` 等 prefix。
+* **fail-open**:parse 失敗就原樣寫回,不因過濾把整個 feed 弄壞。
+* **範圍**:目前只吃 `config.yaml` 手動設定,Web UI 尚未提供過濾欄位(`add_feed_entry` 不寫 filter)。要 Web 化再說。
+
+## 評估過 crawl4ai,不採用
+
+2026-08-06 評估 [crawl4ai](https://github.com/unclecode/crawl4ai)(開源 LLM-friendly 爬蟲,Playwright + FastAPI,把任意網頁轉 Markdown/JSON 餵 LLM)。**不引入**:
+
+* 目的不同:crawl4ai 服務「LLM 資料流」(產 Markdown/JSON 給 RAG/訓練);本專案服務「人的閱讀流」(產 RSS XML 給 Feedly/Inoreader)。它給你內容,組 RSS 還是得自己寫。
+* 太重:每次抓要開一顆完整瀏覽器(Chromium),比走 RSSHub 既有路由重非常多,而我們的來源(YT/Threads/IG/FB)RSSHub 都已覆蓋。
+* 唯一可能的交集:某平台 RSSHub 無路由或被擋、需自己爬網頁再組 RSS 時,可當「抓取層」候選。但以目前需求沒必要——與「[為什麼用 RSSHub,不自己寫爬蟲](#為什麼用-rsshub不自己寫爬蟲)」同理。
+
 ## 為什麼不直接讓 RSS reader 連 RSSHub
 
 * 雲端 reader 需要公開 URL,等於要把本機 RSSHub 暴露到公網
