@@ -17,6 +17,8 @@ feeds:
   # --- YouTube ---
   - name: youtube-cowton0517
     route: /youtube/playlist/UUTWSgo6Lspo9baGEhWkxDrA
+    filter:
+      include: [功能展示]
     # 對應頻道: https://www.youtube.com/@cowton0517
     # channel ID: UCTWSgo6Lspo9baGEhWkxDrA → uploads playlist: UUTWSgo6Lspo9baGEhWkxDrA
 
