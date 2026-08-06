@@ -40,6 +40,19 @@
 
 代價/風險:靠第三方鏡像站,會浮動(item 數時多時少)、隨時可能壞;貼文連結指向鏡像站而非 instagram.com。屬「能用就用,壞了再說」——鏡像站是打地鼠,壞了就在 RSSHub 的 `/api/namespace` 清單裡找下一家(picnob → picuki 就是這樣換的)。需登入的官方路線在免費自架前提下實質已死。
 
+## FB 為什麼一直沒做:規劃內、但性價比低而主動略過
+
+2026-08-06 回頭盤點:FB 從專案初期就列在範圍(README 標題、`.env.example` 有 `FB_COOKIE=` 欄位、README「已知限制」寫明「FB 只能抓 Public Page」),**但從未實作**——git log 零 FB commit,`crawler.PLATFORMS` 只有 `youtube/threads/instagram`,`build_subscription` 無 FB 分支。對比 IG 有整段「三條死路」失敗紀錄,FB 一個字都沒有 → 代表**根本沒動手,不是撞牆**。
+
+沒做的理由(排序):
+1. **用途太窄**:RSSHub FB route 只能抓公開粉專(Public Page),個人塗鴉牆/私人社團抓不到——想看的個人/朋友貼文本來就拿不到。
+2. **又要 cookie/token**:FB route 屬「要登入憑證」那類(`.env.example` 註解:需 Graph API token 或 cookie),跟 IG 同種地雷。IG 已被 cookie 的 TLS 指紋擋、private-api 登入軟封鎖折磨過(見上方 IG 段),FB 可預期一樣痛。
+3. **沒有非訂不可的目標**:真正驅動專案的是 YT/Threads/IG,手上沒有一定要訂的 FB 粉專。
+
+2026-08-06 嘗試實作時發現**硬阻塞**:RSSHub 已整個移除 Facebook 支援。實測容器 image(diygod/rsshub:chromium-bundled,3 週前 build)1678 個 namespace 內無 `facebook`,舊路由 `/facebook/page/*` 回 404;upstream master 也無 `lib/routes/facebook`(GitHub API 404、code search 命中 0)。升級 image 救不回來。**結論:走 RSSHub 做 FB 這條路已死。** 唯一剩下的自架路線是 Facebook Graph API,且實務上只有「自己是管理員的粉專」可行(讀任意他人公開粉專需 Page Public Content Access,要 App Review + 商家驗證,個人工具等於做不到)。
+
+**2026-08-06 決議:放棄 FB,收工。** 沒有非訂不可的自有粉專,不值得為 Graph API 的 app/token 維運成本開這個坑;要借 rss.app 那種 SaaS 又破壞純自架前提(它做得到是靠商家驗證 API + 規模化代理/帳號爬取基礎設施,自架複製不了,分析見 knowledgebase-vault `xml-crawler 2026-08-06 FB 訂閱死路與 rss.app 為何做得到`)。專案聚焦 YT / Threads / IG。FB 若哪天真的要,再評估 Graph API。
+
 ## 為什麼 IG 用分身帳,不用本帳
 
 * IG 對「異常 API 流量」會限速或暫時鎖帳號

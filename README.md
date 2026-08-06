@@ -1,6 +1,6 @@
 # xml-crawler
 
-抓 YouTube / Threads / Instagram / Facebook 公開內容,產生 RSS XML,推上 GitHub Pages 給雲端 RSS reader 訂閱。
+抓 YouTube / Threads / Instagram 公開內容,產生 RSS XML,推上 GitHub Pages 給雲端 RSS reader 訂閱。
 
 底層用 [RSSHub](https://github.com/DIYgod/RSSHub) (Docker) 跑路由,Python 腳本定時拉 XML、寫進 `feeds/`、git push。
 
@@ -34,7 +34,7 @@ docker run hello-world  # 驗證
 
 ```bash
 cp .env.example .env
-# 編輯 .env 填 IG/Threads/FB 帳密 (要用到才填)
+# 編輯 .env 填 IG/Threads 帳密 (要用到才填)
 ```
 
 ### 3. 起 RSSHub
@@ -116,6 +116,6 @@ curl -sSL -A "Mozilla/5.0" "https://www.youtube.com/@<handle>" \
 ## 已知限制
 
 - IG 需要登入 cookie,**請用分身帳號**,本帳可能被限速
-- FB 只能抓 Public Page,個人塗鴉牆/私人社團抓不到
+- FB 不做:RSSHub 已移除 Facebook 支援,自架爬不到(理由見 DECISIONS.md)
 - RSSHub 路由偶爾隨平台改版失效,需要 `docker compose pull && up -d` 更新 image
 - cron 間隔別低於 30 分,避免被反爬偵測
